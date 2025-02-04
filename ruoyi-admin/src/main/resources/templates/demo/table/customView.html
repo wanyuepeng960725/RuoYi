@@ -9,7 +9,7 @@
 			<div class="col-sm-12 select-table table-striped">
 				<table id="bootstrap-table" data-page-size="10" 
 				       data-show-custom-view="true" data-custom-view="customViewFormatter"
-                       data-show-custom-view-button="true">
+                       data-custom-view-default-view="true">
                 </table>
 			</div>
 		</div>
@@ -94,8 +94,8 @@
 		            align: 'center',
 		            formatter: function(value, row, index) {
 		            	var actions = [];
-		            	actions.push('<a class="btn btn-success btn-xs" href="#"><i class="fa fa-edit"></i>编辑</a> ');
-                        actions.push('<a class="btn btn-danger btn-xs" href="#"><i class="fa fa-remove"></i>删除</a>');
+		            	actions.push('<a class="btn btn-success btn-xs" href="javascript:;"><i class="fa fa-edit"></i>编辑</a> ');
+                        actions.push('<a class="btn btn-danger btn-xs" href="javascript:;"><i class="fa fa-remove"></i>删除</a>');
 						return actions.join('');
 		            }
 		        }]

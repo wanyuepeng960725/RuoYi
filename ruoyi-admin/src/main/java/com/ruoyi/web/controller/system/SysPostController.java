@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import com.ruoyi.common.annotation.Log;
-import com.ruoyi.common.constant.UserConstants;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
@@ -69,19 +68,13 @@ public class SysPostController extends BaseController
     @ResponseBody
     public AjaxResult remove(String ids)
     {
-        try
-        {
-            return toAjax(postService.deletePostByIds(ids));
-        }
-        catch (Exception e)
-        {
-            return error(e.getMessage());
-        }
+        return toAjax(postService.deletePostByIds(ids));
     }
 
     /**
      * 新增岗位
      */
+    @RequiresPermissions("system:post:add")
     @GetMapping("/add")
     public String add()
     {
@@ -97,11 +90,11 @@ public class SysPostController extends BaseController
     @ResponseBody
     public AjaxResult addSave(@Validated SysPost post)
     {
-        if (UserConstants.POST_NAME_NOT_UNIQUE.equals(postService.checkPostNameUnique(post)))
+        if (!postService.checkPostNameUnique(post))
         {
             return error("新增岗位'" + post.getPostName() + "'失败，岗位名称已存在");
         }
-        else if (UserConstants.POST_CODE_NOT_UNIQUE.equals(postService.checkPostCodeUnique(post)))
+        else if (!postService.checkPostCodeUnique(post))
         {
             return error("新增岗位'" + post.getPostName() + "'失败，岗位编码已存在");
         }
@@ -129,11 +122,11 @@ public class SysPostController extends BaseController
     @ResponseBody
     public AjaxResult editSave(@Validated SysPost post)
     {
-        if (UserConstants.POST_NAME_NOT_UNIQUE.equals(postService.checkPostNameUnique(post)))
+        if (!postService.checkPostNameUnique(post))
         {
             return error("修改岗位'" + post.getPostName() + "'失败，岗位名称已存在");
         }
-        else if (UserConstants.POST_CODE_NOT_UNIQUE.equals(postService.checkPostCodeUnique(post)))
+        else if (!postService.checkPostCodeUnique(post))
         {
             return error("修改岗位'" + post.getPostName() + "'失败，岗位编码已存在");
         }
@@ -146,7 +139,7 @@ public class SysPostController extends BaseController
      */
     @PostMapping("/checkPostNameUnique")
     @ResponseBody
-    public String checkPostNameUnique(SysPost post)
+    public boolean checkPostNameUnique(SysPost post)
     {
         return postService.checkPostNameUnique(post);
     }
@@ -156,7 +149,7 @@ public class SysPostController extends BaseController
      */
     @PostMapping("/checkPostCodeUnique")
     @ResponseBody
-    public String checkPostCodeUnique(SysPost post)
+    public boolean checkPostCodeUnique(SysPost post)
     {
         return postService.checkPostCodeUnique(post);
     }

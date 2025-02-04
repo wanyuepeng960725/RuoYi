@@ -54,6 +54,7 @@ public class SysDeptController extends BaseController
     /**
      * 新增部门
      */
+    @RequiresPermissions("system:dept:add")
     @GetMapping("/add/{parentId}")
     public String add(@PathVariable("parentId") Long parentId, ModelMap mmap)
     {
@@ -74,7 +75,7 @@ public class SysDeptController extends BaseController
     @ResponseBody
     public AjaxResult addSave(@Validated SysDept dept)
     {
-        if (UserConstants.DEPT_NAME_NOT_UNIQUE.equals(deptService.checkDeptNameUnique(dept)))
+        if (!deptService.checkDeptNameUnique(dept))
         {
             return error("新增部门'" + dept.getDeptName() + "'失败，部门名称已存在");
         }
@@ -110,7 +111,7 @@ public class SysDeptController extends BaseController
     {
         Long deptId = dept.getDeptId();
         deptService.checkDeptDataScope(deptId);
-        if (UserConstants.DEPT_NAME_NOT_UNIQUE.equals(deptService.checkDeptNameUnique(dept)))
+        if (!deptService.checkDeptNameUnique(dept))
         {
             return error("修改部门'" + dept.getDeptName() + "'失败，部门名称已存在");
         }
@@ -152,7 +153,7 @@ public class SysDeptController extends BaseController
      */
     @PostMapping("/checkDeptNameUnique")
     @ResponseBody
-    public String checkDeptNameUnique(SysDept dept)
+    public boolean checkDeptNameUnique(SysDept dept)
     {
         return deptService.checkDeptNameUnique(dept);
     }
@@ -163,9 +164,9 @@ public class SysDeptController extends BaseController
      * @param deptId 部门ID
      * @param excludeId 排除ID
      */
+    @RequiresPermissions("system:dept:list")
     @GetMapping(value = { "/selectDeptTree/{deptId}", "/selectDeptTree/{deptId}/{excludeId}" })
-    public String selectDeptTree(@PathVariable("deptId") Long deptId,
-            @PathVariable(value = "excludeId", required = false) Long excludeId, ModelMap mmap)
+    public String selectDeptTree(@PathVariable("deptId") Long deptId, @PathVariable(value = "excludeId", required = false) Long excludeId, ModelMap mmap)
     {
         mmap.put("dept", deptService.selectDeptById(deptId));
         mmap.put("excludeId", excludeId);
@@ -175,6 +176,7 @@ public class SysDeptController extends BaseController
     /**
      * 加载部门列表树（排除下级）
      */
+    @RequiresPermissions("system:dept:list")
     @GetMapping("/treeData/{excludeId}")
     @ResponseBody
     public List<Ztree> treeDataExcludeChild(@PathVariable(value = "excludeId", required = false) Long excludeId)

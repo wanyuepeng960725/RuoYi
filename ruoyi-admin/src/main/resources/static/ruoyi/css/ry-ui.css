@@ -338,7 +338,7 @@ label.error {
 
 .input-group label.error {
 	z-index:99;
-	right: 42px
+	right: 42px;
 }
 
 .input-group input.error + label.error + .input-group-addon>i {
@@ -347,10 +347,14 @@ label.error {
 
 .input-group.date label.error {
 	z-index:99;
-	right: 42px
+	right: 42px;
 }
 
-.Validform_error,input.error,textarea.error,select.error {
+.select2-hidden-accessible + label.error, select.error + label.error {
+	right: 38px;
+}
+
+.Validform_error,input.error,textarea.error,select.error,select.error+label.error+.select2-container--bootstrap .select2-selection--single {
 	background-color: #fbe2e2;
 	border-color: #c66161;
 	color: #c00
@@ -380,12 +384,12 @@ label.error {
 	position: relative;
 	padding-left: 25px;
 	padding-right: 15px;
-	padding-top: 8px;
+	padding-top: 7px;
 }
 
 .icheckbox, .icheckbox-blue, .iradio, .iradio-blue, .iradio-purple {
 	position: absolute;
-	top: 8px;
+	top: 7px;
 	left: 0
 }
 
@@ -1004,6 +1008,37 @@ table.rc-table-resizing thead > th > a {
 	padding-bottom:5px
 }
 
+.form-control-plaintext {
+    display: block;
+    width: 100%;
+    padding-top: .286rem;
+    padding-bottom: .286rem;
+    margin-bottom: 0;
+    line-height: 1.57142857;
+    color: #212529;
+    background-color: transparent;
+    border: solid transparent;
+    border-width: 1px 0;
+    font-weight: 500;
+    border-bottom: 1px dashed #ccd5db;
+    min-height: 25px
+}
+
+.form-control-plaintext-no-content {
+    display: block;
+    width: 100%;
+    padding-top: .286rem;
+    padding-bottom: .286rem;
+    margin-bottom: 0;
+    line-height: 1.57142857;
+    color: #ddd !important;
+    background-color: transparent;
+    border: solid transparent;
+    border-width: 1px 0;
+    border-bottom: 1px dashed #ccd5db;
+    min-height: 25px
+}
+
 .main-content {
     background-color: #ffffff;
     color: inherit;
@@ -1032,7 +1067,7 @@ table.rc-table-resizing thead > th > a {
 }
 
 /** 表格行拖拽样式 **/
-.reorder_rows_onDragClass td {
+.reorder-rows-on-drag-class td {
     color:yellow!important;
 	background-color:#999!important;
 	text-shadow:0 0 10px black,0 0 10px black,0 0 8px black,0 0 6px black,0 0 6px black;

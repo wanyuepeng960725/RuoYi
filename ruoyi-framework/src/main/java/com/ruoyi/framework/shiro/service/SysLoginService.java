@@ -10,18 +10,21 @@ import com.ruoyi.common.constant.UserConstants;
 import com.ruoyi.common.core.domain.entity.SysRole;
 import com.ruoyi.common.core.domain.entity.SysUser;
 import com.ruoyi.common.enums.UserStatus;
+import com.ruoyi.common.exception.user.BlackListException;
 import com.ruoyi.common.exception.user.CaptchaException;
 import com.ruoyi.common.exception.user.UserBlockedException;
 import com.ruoyi.common.exception.user.UserDeleteException;
 import com.ruoyi.common.exception.user.UserNotExistsException;
 import com.ruoyi.common.exception.user.UserPasswordNotMatchException;
 import com.ruoyi.common.utils.DateUtils;
+import com.ruoyi.common.utils.IpUtils;
 import com.ruoyi.common.utils.MessageUtils;
 import com.ruoyi.common.utils.ServletUtils;
 import com.ruoyi.common.utils.ShiroUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.framework.manager.AsyncManager;
 import com.ruoyi.framework.manager.factory.AsyncFactory;
+import com.ruoyi.system.service.ISysConfigService;
 import com.ruoyi.system.service.ISysMenuService;
 import com.ruoyi.system.service.ISysUserService;
 
@@ -41,6 +44,9 @@ public class SysLoginService
 
     @Autowired
     private ISysMenuService menuService;
+
+    @Autowired
+    private ISysConfigService configService;
 
     /**
      * 登录
@@ -75,6 +81,14 @@ public class SysLoginService
             throw new UserPasswordNotMatchException();
         }
 
+        // IP黑名单校验
+        String blackStr = configService.selectConfigByKey("sys.login.blackIPList");
+        if (IpUtils.isMatchedIp(blackStr, ShiroUtils.getIp()))
+        {
+            AsyncManager.me().execute(AsyncFactory.recordLogininfor(username, Constants.LOGIN_FAIL, MessageUtils.message("login.blocked")));
+            throw new BlackListException();
+        }
+
         // 查询用户信息
         SysUser user = userService.selectUserByLoginName(username);
 
@@ -104,7 +118,7 @@ public class SysLoginService
         
         if (UserStatus.DISABLE.getCode().equals(user.getStatus()))
         {
-            AsyncManager.me().execute(AsyncFactory.recordLogininfor(username, Constants.LOGIN_FAIL, MessageUtils.message("user.blocked", user.getRemark())));
+            AsyncManager.me().execute(AsyncFactory.recordLogininfor(username, Constants.LOGIN_FAIL, MessageUtils.message("user.blocked")));
             throw new UserBlockedException();
         }
 
@@ -144,13 +158,16 @@ public class SysLoginService
     public void setRolePermission(SysUser user)
     {
         List<SysRole> roles = user.getRoles();
-        if (!roles.isEmpty() && roles.size() > 1)
+        if (!roles.isEmpty())
         {
-            // 多角色设置permissions属性，以便数据权限匹配权限
+            // 设置permissions属性，以便数据权限匹配权限
             for (SysRole role : roles)
             {
-                Set<String> rolePerms = menuService.selectPermsByRoleId(role.getRoleId());
-                role.setPermissions(rolePerms);
+                if (StringUtils.equals(role.getStatus(), UserConstants.ROLE_NORMAL))
+                {
+                    Set<String> rolePerms = menuService.selectPermsByRoleId(role.getRoleId());
+                    role.setPermissions(rolePerms);
+                }
             }
         }
     }

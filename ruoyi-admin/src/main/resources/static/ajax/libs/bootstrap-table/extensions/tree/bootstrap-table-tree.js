@@ -131,6 +131,9 @@
                     $th = $('<th style="width:36px"></th>');
                 } else {
                     $th = $('<th style="' + ((column.width) ? ('width:' + column.width + ((column.widthUnit) ? column.widthUnit : 'px')) : '') + '" class="' + column.field + '_cls"></th>');
+                    if (column.align) {
+                        $th.css("text-align", column.align);
+                    }
                 }
                 if((!target.isFixWidth)&& column.width){
                     target.isFixWidth = column.width.indexOf("px")>-1?true:false;
@@ -217,6 +220,8 @@
             if (!data || data.length <= 0) {
                 var _empty = '<tr><td colspan="' + options.columns.length + '"><div style="display: block;text-align: center;">没有找到匹配的记录</div></td></tr>'
                 $tbody.html(_empty);
+                options.pageNumber = 1;
+                initPagination(0, 0);
                 return;
             }
             // 缓存并格式化数据
@@ -271,6 +276,9 @@
             var pageTo = options.pageNumber * options.pageSize;
             if (pageTo > target.totalRows) {
                 pageTo = target.totalRows;
+            }
+            if (pageFrom > pageTo) {
+                pageFrom = pageTo;
             }
             html.push('<div class="pull-left pagination-detail">');
             html.push('<span class="pagination-info">' + formatShowingRows(pageFrom, pageTo, target.totalRows) + '</span>');
@@ -681,6 +689,7 @@
                 if (_isExpanded || _isCollapsed) {
                     var tr = $(this).parent().parent();
                     var row_id = tr.attr("id");
+                    var row_pid = tr.attr("pid");
                     var _id = tr.attr("data-id");
                     var _ls = target.find("tbody").find("tr[id^='" + row_id + "_']");
                     if (!options.pagination) {
@@ -698,7 +707,8 @@
 	                        if (_ls && _ls.length > 0) {
 	                            $.each(_ls, function(index, item) {
 	                                var _p_icon = $("#" + $(item).attr("pid")).children().eq(options.expandColumn).find(".treetable-expander");
-	                                if (_p_icon.hasClass(options.expanderExpandedClass)) {
+	                                var _p_display = $("#" + $(item).attr("pid")).css('display');
+	                                if (_p_icon.hasClass(options.expanderExpandedClass) && _p_display == 'table') {
 	                                    $(item).css("display", "table");
 	                                }
 	                            });
@@ -708,18 +718,36 @@
                         var _ls = target.find("tbody").find("tr[id^='" + row_id + "_']");
                         if (_ls && _ls.length > 0) {
                             if (_isExpanded) {
-                                $.each(_ls, function(index, item) {
-                                    $(item).css("display", "none");
-                                });
+                                if (row_pid == "row_root") {
+                                    $('table tr[id^="' + row_id + '_"]').css("display", "none");
+                                    $('table tr[id^="' + row_id + '_"]').each(function(i,n) {
+                                        var _isExpanded = $(n).find(".treetable-expander").hasClass(options.expanderExpandedClass);
+                                        if (_isExpanded) {
+                                            $(n).find(".treetable-expander").trigger("click");
+                                        }
+                                    })
+                                } else {
+                                    $.each(_ls, function(index, item) {
+                                        $(item).css("display", "none");
+                                        var _isExpanded = $(item).find(".treetable-expander").hasClass(options.expanderExpandedClass);
+                                        if (_isExpanded) {
+                                            $(item).find(".treetable-expander").trigger("click");
+                                        }
+                                     });
+                            	}
                             } else {
-                                $.each(_ls, function(index, item) {
-                                    var _icon = $(item).eq(options.expandColumn).find(".treetable-expander");
-                                    if (_icon && _icon.hasClass(options.expanderExpandedClass)) {
-                                        $(item).css("display", "table");
-                                    } else {
-                                        $(item).css("display", "table");
-                                    }
-                                });
+                                if (row_pid == "row_root") {
+                                    $('table tr[pid="' + row_id + '"]').css("display", "table");
+                                } else {
+	                                $.each(_ls, function(index, item) {
+	                                    var _p_icon = $("#" + $(item).attr("pid")).children().eq(options.expandColumn).find(".treetable-expander");
+                                        var _isExpanded = _p_icon.hasClass(options.expanderExpandedClass);
+                                        var _isCollapsed = _p_icon.hasClass(options.expanderCollapsedClass);
+	                                    if (row_id == $(item).attr("pid")) {
+		                                    $(item).css("display", "table");
+	                                    }
+	                                });
+                                }
                             }
                         } else {
                             if (options.pagination) {
@@ -729,7 +757,7 @@
                                     $.ajax({
                                         type: options.type,
                                         url: options.dataUrl,
-                                        data: $.extend(parms, options.ajaxParams),
+                                        data: parms,
                                         dataType: "json",
                                         success: function(data, textStatus, jqXHR) {
                                             $("#" + row_id + "_load").remove();
@@ -765,6 +793,7 @@
         }
         // 添加数据刷新表格
         target.appendData = function(data) {
+            data.reverse()
             // 下边的操作主要是为了查询时让一些没有根节点的节点显示
             $.each(data, function(i, item) {
                 if (options.pagination) {

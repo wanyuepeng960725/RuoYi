@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import com.ruoyi.common.annotation.Log;
-import com.ruoyi.common.constant.UserConstants;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.domain.Ztree;
@@ -68,6 +67,7 @@ public class SysDictTypeController extends BaseController
     /**
      * 新增字典类型
      */
+    @RequiresPermissions("system:dict:add")
     @GetMapping("/add")
     public String add()
     {
@@ -83,7 +83,7 @@ public class SysDictTypeController extends BaseController
     @ResponseBody
     public AjaxResult addSave(@Validated SysDictType dict)
     {
-        if (UserConstants.DICT_TYPE_NOT_UNIQUE.equals(dictTypeService.checkDictTypeUnique(dict)))
+        if (!dictTypeService.checkDictTypeUnique(dict))
         {
             return error("新增字典'" + dict.getDictName() + "'失败，字典类型已存在");
         }
@@ -111,7 +111,7 @@ public class SysDictTypeController extends BaseController
     @ResponseBody
     public AjaxResult editSave(@Validated SysDictType dict)
     {
-        if (UserConstants.DICT_TYPE_NOT_UNIQUE.equals(dictTypeService.checkDictTypeUnique(dict)))
+        if (!dictTypeService.checkDictTypeUnique(dict))
         {
             return error("修改字典'" + dict.getDictName() + "'失败，字典类型已存在");
         }
@@ -159,7 +159,7 @@ public class SysDictTypeController extends BaseController
      */
     @PostMapping("/checkDictTypeUnique")
     @ResponseBody
-    public String checkDictTypeUnique(SysDictType dictType)
+    public boolean checkDictTypeUnique(SysDictType dictType)
     {
         return dictTypeService.checkDictTypeUnique(dictType);
     }
@@ -168,8 +168,7 @@ public class SysDictTypeController extends BaseController
      * 选择字典树
      */
     @GetMapping("/selectDictTree/{columnId}/{dictType}")
-    public String selectDeptTree(@PathVariable("columnId") Long columnId, @PathVariable("dictType") String dictType,
-            ModelMap mmap)
+    public String selectDeptTree(@PathVariable("columnId") Long columnId, @PathVariable("dictType") String dictType, ModelMap mmap)
     {
         mmap.put("columnId", columnId);
         mmap.put("dict", dictTypeService.selectDictTypeByType(dictType));

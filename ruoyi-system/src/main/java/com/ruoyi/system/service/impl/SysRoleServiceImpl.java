@@ -278,15 +278,15 @@ public class SysRoleServiceImpl implements ISysRoleService
      * @return 结果
      */
     @Override
-    public String checkRoleNameUnique(SysRole role)
+    public boolean checkRoleNameUnique(SysRole role)
     {
         Long roleId = StringUtils.isNull(role.getRoleId()) ? -1L : role.getRoleId();
         SysRole info = roleMapper.checkRoleNameUnique(role.getRoleName());
         if (StringUtils.isNotNull(info) && info.getRoleId().longValue() != roleId.longValue())
         {
-            return UserConstants.ROLE_NAME_NOT_UNIQUE;
+            return UserConstants.NOT_UNIQUE;
         }
-        return UserConstants.ROLE_NAME_UNIQUE;
+        return UserConstants.UNIQUE;
     }
 
     /**
@@ -296,15 +296,15 @@ public class SysRoleServiceImpl implements ISysRoleService
      * @return 结果
      */
     @Override
-    public String checkRoleKeyUnique(SysRole role)
+    public boolean checkRoleKeyUnique(SysRole role)
     {
         Long roleId = StringUtils.isNull(role.getRoleId()) ? -1L : role.getRoleId();
         SysRole info = roleMapper.checkRoleKeyUnique(role.getRoleKey());
         if (StringUtils.isNotNull(info) && info.getRoleId().longValue() != roleId.longValue())
         {
-            return UserConstants.ROLE_KEY_NOT_UNIQUE;
+            return UserConstants.NOT_UNIQUE;
         }
-        return UserConstants.ROLE_KEY_UNIQUE;
+        return UserConstants.UNIQUE;
     }
 
     /**
@@ -324,19 +324,22 @@ public class SysRoleServiceImpl implements ISysRoleService
     /**
      * 校验角色是否有数据权限
      * 
-     * @param roleId 角色id
+     * @param roleIds 角色id
      */
     @Override
-    public void checkRoleDataScope(Long roleId)
+    public void checkRoleDataScope(Long... roleIds)
     {
         if (!SysUser.isAdmin(ShiroUtils.getUserId()))
         {
-            SysRole role = new SysRole();
-            role.setRoleId(roleId);
-            List<SysRole> roles = SpringUtils.getAopProxy(this).selectRoleList(role);
-            if (StringUtils.isEmpty(roles))
+            for (Long roleId : roleIds)
             {
-                throw new ServiceException("没有权限访问角色数据！");
+                SysRole role = new SysRole();
+                role.setRoleId(roleId);
+                List<SysRole> roles = SpringUtils.getAopProxy(this).selectRoleList(role);
+                if (StringUtils.isEmpty(roles))
+                {
+                    throw new ServiceException("没有权限访问角色数据！");
+                }
             }
         }
     }

@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import com.ruoyi.common.annotation.Log;
-import com.ruoyi.common.constant.UserConstants;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.domain.Ztree;
@@ -78,6 +77,7 @@ public class SysMenuController extends BaseController
     /**
      * 新增
      */
+    @RequiresPermissions("system:menu:add")
     @GetMapping("/add/{parentId}")
     public String add(@PathVariable("parentId") Long parentId, ModelMap mmap)
     {
@@ -105,7 +105,7 @@ public class SysMenuController extends BaseController
     @ResponseBody
     public AjaxResult addSave(@Validated SysMenu menu)
     {
-        if (UserConstants.MENU_NAME_NOT_UNIQUE.equals(menuService.checkMenuNameUnique(menu)))
+        if (!menuService.checkMenuNameUnique(menu))
         {
             return error("新增菜单'" + menu.getMenuName() + "'失败，菜单名称已存在");
         }
@@ -134,7 +134,7 @@ public class SysMenuController extends BaseController
     @ResponseBody
     public AjaxResult editSave(@Validated SysMenu menu)
     {
-        if (UserConstants.MENU_NAME_NOT_UNIQUE.equals(menuService.checkMenuNameUnique(menu)))
+        if (!menuService.checkMenuNameUnique(menu))
         {
             return error("修改菜单'" + menu.getMenuName() + "'失败，菜单名称已存在");
         }
@@ -157,7 +157,7 @@ public class SysMenuController extends BaseController
      */
     @PostMapping("/checkMenuNameUnique")
     @ResponseBody
-    public String checkMenuNameUnique(SysMenu menu)
+    public boolean checkMenuNameUnique(SysMenu menu)
     {
         return menuService.checkMenuNameUnique(menu);
     }

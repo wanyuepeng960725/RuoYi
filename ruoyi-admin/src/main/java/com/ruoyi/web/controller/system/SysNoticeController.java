@@ -56,6 +56,7 @@ public class SysNoticeController extends BaseController
     /**
      * 新增公告
      */
+    @RequiresPermissions("system:notice:add")
     @GetMapping("/add")
     public String add()
     {
@@ -97,6 +98,17 @@ public class SysNoticeController extends BaseController
     {
         notice.setUpdateBy(getLoginName());
         return toAjax(noticeService.updateNotice(notice));
+    }
+
+    /**
+     * 查询公告详细
+     */
+    @RequiresPermissions("system:notice:list")
+    @GetMapping("/view/{noticeId}")
+    public String view(@PathVariable("noticeId") Long noticeId, ModelMap mmap)
+    {
+        mmap.put("notice", noticeService.selectNoticeById(noticeId));
+        return prefix + "/view";
     }
 
     /**

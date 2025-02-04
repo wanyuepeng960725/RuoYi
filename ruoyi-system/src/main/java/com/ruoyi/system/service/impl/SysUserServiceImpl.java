@@ -3,6 +3,7 @@ package com.ruoyi.system.service.impl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,9 +17,11 @@ import com.ruoyi.common.core.domain.entity.SysRole;
 import com.ruoyi.common.core.domain.entity.SysUser;
 import com.ruoyi.common.core.text.Convert;
 import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.common.utils.ExceptionUtil;
 import com.ruoyi.common.utils.ShiroUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.common.utils.bean.BeanValidators;
+import com.ruoyi.common.utils.html.EscapeUtil;
 import com.ruoyi.common.utils.security.Md5Utils;
 import com.ruoyi.common.utils.spring.SpringUtils;
 import com.ruoyi.system.domain.SysPost;
@@ -30,6 +33,7 @@ import com.ruoyi.system.mapper.SysUserMapper;
 import com.ruoyi.system.mapper.SysUserPostMapper;
 import com.ruoyi.system.mapper.SysUserRoleMapper;
 import com.ruoyi.system.service.ISysConfigService;
+import com.ruoyi.system.service.ISysDeptService;
 import com.ruoyi.system.service.ISysUserService;
 
 /**
@@ -59,6 +63,9 @@ public class SysUserServiceImpl implements ISysUserService
 
     @Autowired
     private ISysConfigService configService;
+
+    @Autowired
+    private ISysDeptService deptService;
 
     @Autowired
     protected Validator validator;
@@ -347,20 +354,21 @@ public class SysUserServiceImpl implements ISysUserService
     }
 
     /**
-     * 校验登录名称是否唯一
+     * 校验用户名称是否唯一
      * 
-     * @param loginName 用户名
-     * @return
+     * @param user 用户信息
+     * @return 结果
      */
     @Override
-    public String checkLoginNameUnique(String loginName)
+    public boolean checkLoginNameUnique(SysUser user)
     {
-        int count = userMapper.checkLoginNameUnique(loginName);
-        if (count > 0)
+        Long userId = StringUtils.isNull(user.getUserId()) ? -1L : user.getUserId();
+        SysUser info = userMapper.checkLoginNameUnique(user.getLoginName());
+        if (StringUtils.isNotNull(info) && info.getUserId().longValue() != userId.longValue())
         {
-            return UserConstants.USER_NAME_NOT_UNIQUE;
+            return UserConstants.NOT_UNIQUE;
         }
-        return UserConstants.USER_NAME_UNIQUE;
+        return UserConstants.UNIQUE;
     }
 
     /**
@@ -370,15 +378,15 @@ public class SysUserServiceImpl implements ISysUserService
      * @return
      */
     @Override
-    public String checkPhoneUnique(SysUser user)
+    public boolean checkPhoneUnique(SysUser user)
     {
         Long userId = StringUtils.isNull(user.getUserId()) ? -1L : user.getUserId();
         SysUser info = userMapper.checkPhoneUnique(user.getPhonenumber());
         if (StringUtils.isNotNull(info) && info.getUserId().longValue() != userId.longValue())
         {
-            return UserConstants.USER_PHONE_NOT_UNIQUE;
+            return UserConstants.NOT_UNIQUE;
         }
-        return UserConstants.USER_PHONE_UNIQUE;
+        return UserConstants.UNIQUE;
     }
 
     /**
@@ -388,15 +396,15 @@ public class SysUserServiceImpl implements ISysUserService
      * @return
      */
     @Override
-    public String checkEmailUnique(SysUser user)
+    public boolean checkEmailUnique(SysUser user)
     {
         Long userId = StringUtils.isNull(user.getUserId()) ? -1L : user.getUserId();
         SysUser info = userMapper.checkEmailUnique(user.getEmail());
         if (StringUtils.isNotNull(info) && info.getUserId().longValue() != userId.longValue())
         {
-            return UserConstants.USER_EMAIL_NOT_UNIQUE;
+            return UserConstants.NOT_UNIQUE;
         }
-        return UserConstants.USER_EMAIL_UNIQUE;
+        return UserConstants.UNIQUE;
     }
 
     /**
@@ -486,7 +494,6 @@ public class SysUserServiceImpl implements ISysUserService
         int failureNum = 0;
         StringBuilder successMsg = new StringBuilder();
         StringBuilder failureMsg = new StringBuilder();
-        String password = configService.selectConfigByKey("sys.user.initPassword");
         for (SysUser user : userList)
         {
             try
@@ -496,17 +503,23 @@ public class SysUserServiceImpl implements ISysUserService
                 if (StringUtils.isNull(u))
                 {
                     BeanValidators.validateWithException(validator, user);
+                    deptService.checkDeptDataScope(user.getDeptId());
+                    String password = configService.selectConfigByKey("sys.user.initPassword");
                     user.setPassword(Md5Utils.hash(user.getLoginName() + password));
                     user.setCreateBy(operName);
-                    this.insertUser(user);
+                    userMapper.insertUser(user);
                     successNum++;
                     successMsg.append("<br/>" + successNum + "、账号 " + user.getLoginName() + " 导入成功");
                 }
                 else if (isUpdateSupport)
                 {
                     BeanValidators.validateWithException(validator, user);
+                    checkUserAllowed(u);
+                    checkUserDataScope(u.getUserId());
+                    deptService.checkDeptDataScope(user.getDeptId());
+                    user.setUserId(u.getUserId());
                     user.setUpdateBy(operName);
-                    this.updateUser(user);
+                    userMapper.updateUser(user);
                     successNum++;
                     successMsg.append("<br/>" + successNum + "、账号 " + user.getLoginName() + " 更新成功");
                 }
@@ -519,7 +532,12 @@ public class SysUserServiceImpl implements ISysUserService
             catch (Exception e)
             {
                 failureNum++;
-                String msg = "<br/>" + failureNum + "、账号 " + user.getLoginName() + " 导入失败：";
+                String loginName = user.getLoginName();
+                if (ExceptionUtil.isCausedBy(e, ConstraintViolationException.class))
+                {
+                    loginName = EscapeUtil.clean(loginName);
+                }
+                String msg = "<br/>" + failureNum + "、账号 " + loginName + " 导入失败：";
                 failureMsg.append(msg + e.getMessage());
                 log.error(msg, e);
             }

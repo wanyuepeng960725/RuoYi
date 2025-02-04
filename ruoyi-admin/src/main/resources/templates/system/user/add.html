@@ -163,15 +163,13 @@
                         	"loginName": function() {
                                 return $.common.trim($("#loginName").val());
                             }
-                        },
-                        dataFilter: function(data, type) {
-                        	return $.validate.unique(data);
                         }
                     }
         		},
         		password:{
         			minlength: 5,
-        			maxlength: 20
+        			maxlength: 20,
+        			specialSign: true
         		},
         		email:{
                     email:true,
@@ -183,9 +181,6 @@
                             "email": function () {
                                 return $.common.trim($("#email").val());
                             }
-                        },
-                        dataFilter: function (data, type) {
-                        	return $.validate.unique(data);
                         }
                     }
         		},
@@ -199,9 +194,6 @@
                             "phonenumber": function () {
                                 return $.common.trim($("#phonenumber").val());
                             }
-                        },
-                        dataFilter: function (data, type) {
-                        	return $.validate.unique(data);
                         }
                     }
         		},

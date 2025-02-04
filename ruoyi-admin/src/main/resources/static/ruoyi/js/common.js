@@ -5,15 +5,9 @@
 
 var startLayDate;
 var endLayDate;
+var isScrollToTop = parent.isScrollToTop;
+
 $(function() {
-	
-    //  layer扩展皮肤
-    if (window.layer !== undefined) {
-        layer.config({
-            extend: 'moon/style.css',
-            skin: 'layer-ext-moon'
-        });
-    }
 	
     // 回到顶部绑定
     if ($.fn.toTop !== undefined) {
@@ -48,7 +42,7 @@ $(function() {
     });
 	 
     // laydate 时间控件绑定
-    if ($(".select-time").length > 0) {
+    if ($(".select-time").length > 0 && $('#startTime').length > 0 && $('#endTime').length > 0) {
        layui.use('laydate', function() {
             var laydate = layui.laydate;
             startLayDate = laydate.render({
@@ -68,6 +62,7 @@ $(function() {
                         endLayDate.config.min.month = '';
                         endLayDate.config.min.date = '';
                     }
+                    $('#endTime').trigger('click');
                 }
             });
             endLayDate = laydate.render({
@@ -230,7 +225,7 @@ var refreshItem = function(){
 /** 关闭选项卡 */
 var closeItem = function(dataId){
 	var topWindow = $(window.parent.document);
-	if($.common.isNotEmpty(dataId)){
+	if ($.common.isNotEmpty(dataId)) {
 	    window.parent.$.modal.closeLoading();
 	    // 根据dataId关闭指定选项卡
 	    $('.menuTab[data-id="' + dataId + '"]', topWindow).remove();
@@ -240,11 +235,11 @@ var closeItem = function(dataId){
 	}
 	var panelUrl = window.frameElement.getAttribute('data-panel');
 	$('.page-tabs-content .active i', topWindow).click();
-	if($.common.isNotEmpty(panelUrl)){
+	if ($.common.isNotEmpty(panelUrl)) {
 	    $('.menuTab[data-id="' + panelUrl + '"]', topWindow).addClass('active').siblings('.menuTab').removeClass('active');
 	    $('.mainContent .RuoYi_iframe', topWindow).each(function() {
 	        if ($(this).data('id') == panelUrl) {
-	            $(this).show().siblings('.RuoYi_iframe').hide();
+	            openToCurrentTab(this);
 	            return false;
             }
         });
@@ -268,13 +263,13 @@ function createMenuItem(dataUrl, menuName, isRefresh) {
                 // 显示tab对应的内容区
                 $('.mainContent .RuoYi_iframe', topWindow).each(function() {
                     if ($(this).data('id') == dataUrl) {
-                        $(this).show().siblings('.RuoYi_iframe').hide();
+                        openToCurrentTab(this);
                         return false;
                     }
                 });
             }
             if (isRefresh) {
-            	refreshTab();
+                refreshTab();
             }
             flag = false;
             return false;
@@ -287,7 +282,12 @@ function createMenuItem(dataUrl, menuName, isRefresh) {
 
         // 添加选项卡对应的iframe
         var str1 = '<iframe class="RuoYi_iframe" name="iframe' + dataIndex + '" width="100%" height="100%" src="' + dataUrl + '" frameborder="0" data-id="' + dataUrl + '" data-panel="' + panelUrl + '" seamless></iframe>';
-        $('.mainContent', topWindow).find('iframe.RuoYi_iframe').hide().parents('.mainContent').append(str1);
+        if (isScrollToTop) {
+            $('.mainContent', topWindow).find('iframe.RuoYi_iframe').hide();
+        } else {
+            $('.mainContent', topWindow).find('iframe.RuoYi_iframe').css({"visibility": "hidden", "position": "absolute", "left": "0", "top": "0"});
+        }
+        $('.mainContent', topWindow).append(str1);
         
         window.parent.$.modal.loading("数据加载中，请稍候...");
         $('.mainContent iframe:visible', topWindow).on('load', function() {
@@ -357,30 +357,64 @@ function activeWindow() {
     return $('.RuoYi_iframe[data-id="' + currentId + '"]', topWindow)[0].contentWindow;
 }
 
+function openToCurrentTab(obj) {
+    if (isScrollToTop) {
+        $(obj).show().siblings('.RuoYi_iframe').hide();
+    } else {
+        $(obj).css({"visibility": "visible", "position": "static"}).siblings('.RuoYi_iframe').css({"visibility": "hidden", "position": "absolute", "left": "0", "top": "0"});
+    }
+}
+
 /** 密码规则范围验证 */
 function checkpwd(chrtype, password) {
     if (chrtype == 1) {
-        if(!$.common.numValid(password)){
+        if (!$.common.numValid(password)) {
             $.modal.alertWarning("密码只能为0-9数字");
             return false;
         }
     } else if (chrtype == 2) {
-        if(!$.common.enValid(password)){
+        if (!$.common.enValid(password)) {
             $.modal.alertWarning("密码只能为a-z和A-Z字母");
             return false;
         }
     } else if (chrtype == 3) {
-        if(!$.common.enNumValid(password)){
+        if (!$.common.enNumValid(password)) {
             $.modal.alertWarning("密码必须包含字母以及数字");
             return false;
         }
     } else if (chrtype == 4) {
-        if(!$.common.charValid(password)){
+        if (!$.common.charValid(password)) {
             $.modal.alertWarning("密码必须包含字母、数字、以及特殊符号<font color='red'>~!@#$%^&*()-=_+</font>");
             return false;
         }
     }
     return true;
+}
+
+/** 开始时间/时分秒 */
+function beginOfTime(date) {
+    if ($.common.isNotEmpty(date)) {
+        return $.common.sprintf("%s 00:00:00", date);
+    }
+}
+
+/** 结束时间/时分秒 */
+function endOfTime(date) {
+    if ($.common.isNotEmpty(date)) {
+        return $.common.sprintf("%s 23:59:59", date);
+    }
+}
+
+/** 重置日期/年月日 */
+function resetDate() {
+	if ($.common.isNotEmpty(startLayDate) && $.common.isNotEmpty(endLayDate)) {
+	    endLayDate.config.min.year = '';
+	    endLayDate.config.min.month = '';
+	    endLayDate.config.min.date = '';
+	    startLayDate.config.max.year = '2099';
+	    startLayDate.config.max.month = '12';
+	    startLayDate.config.max.date = '31';
+	}
 }
 
 // 日志打印封装处理
@@ -428,7 +462,7 @@ var sub = {
 		var data = $("#" + table.options.id).bootstrapTable('getData');
     	var count = data.length;
     	for (var dataIndex = 0; dataIndex < count; dataIndex++) {
-    	    var columns = $('#' + table.options.id + ' tr[data-index="' + dataIndex + '"] td');
+    	    var columns = $('#' + table.options.id + ' tr[data-index="' + dataIndex + '"] td:visible');
     	    var obj = new Object();
     	    for (var i = 0; i < columns.length; i++) {
     	        var inputValue = $(columns[i]).find('input');
@@ -465,9 +499,10 @@ var sub = {
         }
         $("#" + table.options.id).bootstrapTable('remove', { field: subColumn, values: ids });
     },
-    delRowByIndex: function(value) {
+    delRowByIndex: function(value, tableId) {
+    	var currentId = $.common.isEmpty(tableId) ? table.options.id : tableId;
     	sub.editRow();
-        $("#" + table.options.id).bootstrapTable('remove', { field: "index", values: [value] });
+        $("#" + currentId).bootstrapTable('remove', { field: "index", values: [value] });
         sub.editRow();
     },
     addRow: function(row, tableId) {
